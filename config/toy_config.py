@@ -45,6 +45,10 @@ config=dict(
                 dim=[STATE_DIM + LATENT_DIM, 64, 64]
             )
         )
-        
+        world_model=dict(
+            type='WorldModel',
+            dim=[STATE_DIM + ACTION_DIM, 512, 512, 512, 512, STATE_DIM],
+            act='elu',
+        )
     )
 )
