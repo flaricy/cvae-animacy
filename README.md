@@ -1,5 +1,7 @@
 # cvae-animacy
 
+获得更好的阅读体验，参见 [little-aztl的个人博客](https://little-aztl.vercel.app/article/15c30cc5-eea7-80da-87ee-c42cba56df48)。
+
 ## math and technical analysis 
 
 1. $s_t$: t时刻的state，在我们的任务中约定为所有球的坐标。比如2个player时，$s_t = (x_1, y_1, x_2, y_2, x_b, y_b)$,下标b表示球。
