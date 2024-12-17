@@ -7,12 +7,6 @@ config=dict(
         path=dict(
             raw_data_path='data/1V1_data_30/processed',
         ),
-        sample=dict(
-            stride=3,
-            length=30,
-            interval=1,
-            downsample_rate=10,
-        ),
         to_tensor=True,
     ),
 
@@ -54,11 +48,21 @@ config=dict(
     ),
     
     train=dict(
-        dataloader=dict(
-            batch_size=128,
+        gt_dataloader=dict(
+            batch_size=1,
             num_workers=8,
         ),
         epochs=10000,
+        optimizer=dict(
+            type='Adam',
+            lr=1e-4,
+            weight_decay=1e-5,
+        ),
+        scheduler=dict(
+            type='StepLR',
+            step_size=5000,
+            gamma=0.1,
+        ),
     ),
     
     device='mps',

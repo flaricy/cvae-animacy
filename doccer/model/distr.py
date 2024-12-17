@@ -14,7 +14,7 @@ class GaussianDistributor(nn.Module):
     
     def forward(self, *args, **kwargs):
         mean = self.get_mean(*args, **kwargs)
-        sample_ret = torch.rand_like(mean)
+        sample_ret = torch.randn_like(mean)
         ret = sample_ret * self.std + mean 
         return ret
         
