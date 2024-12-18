@@ -66,4 +66,27 @@ config=dict(
     ),
     
     device='mps',
+    
+    simulator=dict(
+        screen_size = (1500, 700),
+        space_damping = 0.5,
+        agent=dict(
+            mass=3,
+            radius=30,
+            force_length=2000,
+            maximum_speed=200,
+            kick_strength=700,
+        ),
+        ball=dict(
+            mass=1,
+            radius=20,
+        ),
+        boundary=dict(
+            offset=100,
+            radius=5,
+        ),
+        goal_length=200,
+        simulation_fps=120,
+        action_fps=60,
+    )
 )
