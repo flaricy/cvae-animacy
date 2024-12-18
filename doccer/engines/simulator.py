@@ -53,6 +53,13 @@ class Simulator:
         for _ in range(self.cfg.simulation_fps // self.cfg.action_fps):
             self.space.step(1/self.cfg.simulation_fps)
             
+        if self.ball['body'].position.x < self.cfg.boundary.offset:
+            return 1
+        elif self.ball['body'].position.x > self.cfg.screen_size[0] - self.cfg.boundary.offset:
+            return 0
+        else:
+            return None
+            
     def get_state(self):
         return np.array([
             self.agents[0]['body'].position.x, self.agents[0]['body'].position.y,
