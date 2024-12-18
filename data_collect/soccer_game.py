@@ -49,7 +49,7 @@ def get_action(keys):
         keys[pygame.K_a],
         keys[pygame.K_s],
         keys[pygame.K_d],
-        keys[pygame.K_z],
+        keys[pygame.K_b],
         keys[pygame.K_UP],
         keys[pygame.K_LEFT],
         keys[pygame.K_DOWN],
@@ -89,7 +89,7 @@ def main():
     
     data_log = dict(
         state=np.zeros((100000, 12)),
-        action=np.zeros((100000, 10)),
+        action=np.zeros((100000, 10), dtype=bool),
     )    
     
     pygame.init()
@@ -116,6 +116,7 @@ def main():
         action = get_action(keys)
         if not started and np.any(action):
                 started = True
+        action = simulator.action_correction(action)
         
         result = simulator.conduct_action(action)
         if result is not None:
@@ -135,6 +136,9 @@ def main():
         clock.tick(visualize_config.rendering_fps)
         
     print(f"Game over! Winner: {result}")
+    
+    for key in data_log.keys():
+        data_log[key] = data_log[key][:counter]
     
     file_helper = FileHelper(data_dir='data')
     with open(file_helper.get_cur_file_path(), 'wb') as f:

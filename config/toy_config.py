@@ -69,17 +69,18 @@ config=dict(
     
     simulator=dict(
         screen_size = (1500, 700),
-        space_damping = 0.5,
+        space_damping = 0.2,
         agent=dict(
-            mass=3,
+            mass=2,
             radius=30,
             force_length=2000,
-            maximum_speed=200,
-            kick_strength=700,
+            maximum_speed=500,
+            kick_strength=900,
         ),
         ball=dict(
             mass=1,
             radius=20,
+            reach_distance=5,
         ),
         boundary=dict(
             offset=100,

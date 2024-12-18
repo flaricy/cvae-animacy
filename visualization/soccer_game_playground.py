@@ -3,9 +3,11 @@ sys.path.append('doccer')
 
 import pygame 
 import numpy as np
+import pickle
 from omegaconf import OmegaConf
 from engines.simulator import Simulator 
 from utils.parse_config import load_config
+from data_collect.file_helper import FileHelper 
 
 visualize_config = dict(
     screen_size=(1500, 700),
@@ -47,7 +49,7 @@ def get_action(keys):
         keys[pygame.K_a],
         keys[pygame.K_s],
         keys[pygame.K_d],
-        keys[pygame.K_z],
+        keys[pygame.K_b],
         keys[pygame.K_UP],
         keys[pygame.K_LEFT],
         keys[pygame.K_DOWN],
@@ -83,7 +85,8 @@ def draw(state, static_boundary_segments, screen):
     for segment in static_boundary_segments:
         pygame.draw.line(surface=screen, color=visualize_config.boundary.color, start_pos=segment[0], end_pos=segment[1], width=visualize_config.boundary.radius)
 
-def main():
+def main(): 
+    
     pygame.init()
     screen = pygame.display.set_mode(visualize_config.screen_size)
     pygame.display.set_caption("Soccer Game")
@@ -97,21 +100,32 @@ def main():
     
     fps_font = pygame.font.SysFont('Arial', 15)
     
+    started = False
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit(0)
                 
         keys = pygame.key.get_pressed()
-        simulator.conduct_action(get_action(keys))
+        action = get_action(keys)
+        if not started and np.any(action):
+                started = True
+        action = simulator.action_correction(action)
         
+        result = simulator.conduct_action(action)
+        if result is not None:
+            break
+        
+        state = simulator.get_state()
         screen.fill(visualize_config.court_color)
         fps = clock.get_fps()
         fps_text = fps_font.render(f"FPS: {fps:.2f}", True, (255, 255, 255))
-        draw(simulator.get_state(), static_boundary_segments, screen)
         screen.blit(fps_text, (10, 10))
+        draw(state, static_boundary_segments, screen)
         pygame.display.flip()
         clock.tick(visualize_config.rendering_fps)
+        
+    print(f"Game over! Winner: {result}")
         
 if __name__ == "__main__":
     main()

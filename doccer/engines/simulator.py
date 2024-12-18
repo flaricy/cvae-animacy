@@ -33,6 +33,14 @@ class Simulator:
         self.ball['body'].position = pymunk.Vec2d(*state['ball']['position'])
         self.ball['body'].velocity = pymunk.Vec2d(*state['ball']['velocity'])
         
+    def action_correction(self, action:List[bool]):
+        kicked = self._get_kick_on_balls(action)
+        if not kicked[0]:
+            action[Simulator.K_Z] = False
+        if not kicked[1]:
+            action[Simulator.K_SLASH] = False
+        return action
+        
     def conduct_action(self, action:List[bool]):
         '''
         [w, a, s, d, kick_0, up, down, left, right, kick_1]
@@ -41,9 +49,10 @@ class Simulator:
         self.agents[0]['body'].apply_force_at_local_point(joint_force_0, (0, 0))
         self.agents[1]['body'].apply_force_at_local_point(joint_force_1, (0, 0))
         
-        kicked = self._get_kick_on_balls(action)
+        
+            
         for agent_id in range(2):
-            if kicked[agent_id]:
+            if (agent_id == 0 and action[Simulator.K_Z]) or (agent_id == 1 and action[Simulator.K_SLASH]):
                 direction = (self.ball['body'].position - self.agents[agent_id]['body'].position).normalized()
                 self.ball['body'].apply_impulse_at_local_point(direction * self.cfg.agent.kick_strength, (0, 0))
 
@@ -197,7 +206,7 @@ class Simulator:
             p1 = self.agents[agent_id]['body'].position
             p2 = self.ball['body'].position 
             dis = (p1 - p2).length 
-            return dis <= self.cfg.agent.radius + self.cfg.ball.radius + 2
+            return dis <= self.cfg.agent.radius + self.cfg.ball.radius + self.cfg.ball.reach_distance 
             
         kicked = [False, False]
         for agent_id, agent in enumerate(self.agents):
