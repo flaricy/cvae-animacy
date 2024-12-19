@@ -11,7 +11,8 @@ config=dict(
         sample=dict(
             max_length=128,
             downsample_rate=1,
-        )
+            scaling=0.001,
+        ),
     ),
 
     model=dict(
@@ -56,10 +57,11 @@ config=dict(
     train=dict(
         epochs=10000,
         dynamic_dataset=dict(
-            max_num_trajectories=5000,
+            max_num_trajectories=640,
         ),
         collector=dict(
-            num_trajectories=12,
+            num_trajectories=64,
+            collect_every_n_epochs=10,
         ),
         update_world_model=dict(
             clip_length=8,
@@ -73,7 +75,7 @@ config=dict(
             clip_length=24,
             dataloader=dict(
                 batch_size=512,
-                shuffle=True
+                shuffle=True,
             ),
             num_updates=8,
         ),

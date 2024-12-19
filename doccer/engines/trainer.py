@@ -1,6 +1,8 @@
 import torch 
 import torch.nn as nn 
+from torch.utils.tensorboard import SummaryWriter
 import omegaconf
+import logging, copy
 from ..model import build_model
 from ..model.loss.state import StateLoss
 from ..model.loss.kl_diverg import KLDivergLoss
@@ -8,6 +10,7 @@ from ..dataset.doccer import DoccerGTDataset, DoccerDynamicDataset
 from ..utils.dataloader import build_dataloader
 from ..utils.optimizer import build_optimizer 
 from ..utils.scheduler import build_scheduler
+from ..utils.misc import AverageHandler
 from .process import TrajectoryCollector
 from .simulator import Simulator
 from tqdm import tqdm 
@@ -20,15 +23,33 @@ class Trainer(object):
         
     def train(self):
         kl_loss_factor=self.cfg.train.kl_divergence_loss.factor_beta
+        self.loss_handlers = dict(
+            world_model=AverageHandler(),
+            vae_state=AverageHandler(),
+            kl_divergence=AverageHandler(),
+        )
         for epoch in range(self.cfg.train.epochs):
-            self.model.eval()
-            pieces = self.trajectory_collector.collect_trajectory(self.model, self.cfg.train.collector.num_trajectories)
-            self.dynamic_dataset.merge_pieces(pieces)
-
-            self.model.train()
+            if epoch % self.cfg.train.collector.collect_every_n_epochs == 0:
+                logging.info(f"epoch {epoch} | Collecting simulated trajectories & updating dynamic dataset")
+                self.model.eval()
+                with torch.no_grad():
+                    pieces = self.trajectory_collector.collect_trajectory(self.model, self.cfg.train.collector.num_trajectories)
+                self.dynamic_dataset.merge_pieces(pieces)
+                
+                self.dynamic_dataset_for_world_model = copy.deepcopy(self.dynamic_dataset)
+                self.dynamic_dataset_for_world_model.update_clips(self.cfg.train.update_world_model.clip_length)
+                logging.info(f"epoch {epoch} | dataset length for world model: {len(self.dynamic_dataset_for_world_model)}")
+                world_model_dataloader = build_dataloader(self.cfg.train.update_world_model.dataloader, self.dynamic_dataset_for_world_model)
+                
+                self.dynamic_dataset_for_policy_model = copy.deepcopy(self.dynamic_dataset)
+                self.dynamic_dataset_for_policy_model.update_clips(self.cfg.train.update_policy_model.clip_length)
+                logging.info(f"epoch {epoch} | dataset length for policy model: {len(self.dynamic_dataset_for_policy_model)}")
+                policy_model_dataloader = build_dataloader(self.cfg.train.update_policy_model.dataloader, self.dynamic_dataset_for_policy_model)
             
-            self.dynamic_dataset.update_clips(self.cfg.train.update_world_model.clip_length)
-            world_model_dataloader = build_dataloader(self.cfg.train.update_world_model.dataloader, self.dynamic_dataset)
+            self.model.train()
+            for key in self.loss_handlers:
+                self.loss_handlers[key].reset()
+            
             for batch_count, data in enumerate(world_model_dataloader, start=1):
                 
                 self.world_model_optimizer.zero_grad()
@@ -44,13 +65,12 @@ class Trainer(object):
                     
                 loss = self.state_loss(generate_state, data['state'])
                 loss.backward()
+                self.loss_handlers['world_model'].update(loss.item())
                 self.world_model_optimizer.step()
                 
                 if batch_count == self.cfg.train.update_world_model.num_updates:
                     break
                 
-            self.dynamic_dataset.update_clips(self.cfg.train.update_policy_model.clip_length)
-            policy_model_dataloader = build_dataloader(self.cfg.train.update_policy_model.dataloader, self.dynamic_dataset)
             for batch_count, data in enumerate(policy_model_dataloader, start=1):
                 
                 self.world_model_optimizer.zero_grad()
@@ -68,12 +88,22 @@ class Trainer(object):
                     action_t = self.model.policy(generate_state[:, -1], latent_t)
                     next_state = self.model.world_model(generate_state[:, -1], action_t)
                     generate_state = torch.cat([generate_state, next_state.unsqueeze(1)], dim=1)
-                loss = self.state_loss(generate_state, data['gt_state']) + kl_loss_factor * self.kl_diver_loss(generate_delta_latent)
+                state_loss = self.state_loss(generate_state, data['gt_state']) 
+                kl_loss = kl_loss_factor * self.kl_diver_loss(generate_delta_latent)
+                loss = state_loss + kl_loss
                 loss.backward()
+                self.loss_handlers['vae_state'].update(state_loss.item())
+                self.loss_handlers['kl_divergence'].update(kl_loss.item())
+                
                 self.vae_model_optimizer.step()
                 
                 if batch_count == self.cfg.train.update_policy_model.num_updates:
                     break
+               
+            log_message = f"epoch {epoch} | " 
+            for key in self.loss_handlers:
+                log_message += f"{key} loss: {self.loss_handlers[key].get_average():.4f}\t"
+            logging.info(log_message)
                 
             self.world_model_scheduler.step()
             self.vae_model_scheduler.step()
@@ -85,14 +115,16 @@ class Trainer(object):
     
     def _prepare_data(self):
         self.gt_dataset = DoccerGTDataset(self.cfg.dataset)
+        logging.info(f"Ground truth dataset length: {len(self.gt_dataset)}")
         self.dynamic_dataset = DoccerDynamicDataset(self.cfg.train.dynamic_dataset)
-        self.simulator = Simulator(self.cfg.simulator)
+        self.simulator = Simulator(self.cfg.simulator, self.cfg.dataset.sample.scaling)
         self.trajectory_collector = TrajectoryCollector(self.gt_dataset, self.cfg.device, self.simulator)
         
         
     def _prepare_model(self):
         self.model = build_model(self.cfg.model)
         self.model.to(self.cfg.device)
+        logging.info(f"model built, total parameters: {sum(p.numel() for p in self.model.parameters() if p.requires_grad)}")
         
         self.world_model_optimizer = build_optimizer(self.cfg.train.optimizer, [p for p in self.model.world_model.parameters() if p.requires_grad])
         self.vae_model_optimizer = build_optimizer(

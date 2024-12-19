@@ -4,6 +4,7 @@ sys.path.append('.')
 import numpy as np 
 import torch 
 import argparse
+import logging
 from doccer.engines.trainer import Trainer 
 from doccer.utils.parse_config import load_config 
 from omegaconf import OmegaConf
@@ -22,6 +23,12 @@ def set_default_dtype():
     
 def set_debug_mode():
     torch.autograd.set_detect_anomaly(True)
+    
+def set_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
 
 if __name__ == "__main__":
     args = parse_args()
@@ -31,7 +38,8 @@ if __name__ == "__main__":
         config.device = args.device 
         
     set_default_dtype()
-    set_debug_mode()
+    # set_debug_mode()
+    set_logging()
         
     trainer = Trainer(config)
     trainer.train()

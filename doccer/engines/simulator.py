@@ -10,8 +10,9 @@ class Simulator:
     COLLTYPE_BOUNDARY = 3
     
     K_W, K_A, K_S, K_D, K_Z, K_UP, K_LEFT, K_DOWN, K_RIGHT, K_SLASH = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-    def __init__(self, cfg:omegaconf.dictconfig.DictConfig):
+    def __init__(self, cfg:omegaconf.dictconfig.DictConfig, state_scaling:float=1.0):
         self.cfg = cfg
+        self.state_scaling = state_scaling
         
     def initialize(self):
         self.space = pymunk.Space()
@@ -25,7 +26,7 @@ class Simulator:
         self.collision_handlers = self._add_collision_handler()
         
     def set_state(self, state:np.ndarray):
-        state = Simulator.parse_state(state)
+        state = self.parse_state(state)
         for agent_id, agent in enumerate(self.agents):
             agent['body'].position = pymunk.Vec2d(*state['agents'][agent_id]['position'])
             agent['body'].velocity = pymunk.Vec2d(*state['agents'][agent_id]['velocity'])
@@ -77,7 +78,7 @@ class Simulator:
             self.agents[1]['body'].velocity.x, self.agents[1]['body'].velocity.y,
             self.ball['body'].position.x, self.ball['body'].position.y,
             self.ball['body'].velocity.x, self.ball['body'].velocity.y,
-        ], dtype=np.float32)
+        ], dtype=np.float32) * self.state_scaling
         
     def _add_agent(self, agent_id:int):
         body = pymunk.Body(mass=self.cfg.agent.mass, moment=float('inf'))
@@ -154,7 +155,8 @@ class Simulator:
         handler_agent_boundary.begin = lambda arbiter, space, data: False
         return [handler_agent_ball, handler_agent_agent, handler_ball_boundary, handler_agent_boundary]
 
-    def parse_state(state:np.ndarray):
+    def parse_state(self, state:np.ndarray):
+        state = state / self.state_scaling
         return dict(
             agents=[
                 dict(

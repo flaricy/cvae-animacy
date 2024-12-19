@@ -15,7 +15,7 @@ class DoccerGTDataset(Dataset):
                 continue 
             with open(file, "rb") as f:
                 data = pickle.load(f)
-            data['state'] = data['state'].astype(np.float32)
+            data['state'] = data['state'].astype(np.float32) * cfg.sample.scaling
             cur_length = data['state'].shape[0]
             self.datas.append(data)
             

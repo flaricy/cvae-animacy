@@ -15,3 +15,18 @@ def is_seq_of(seq, expected_type, seq_type=None):
         if not isinstance(item, expected_type):
             return False
     return True
+
+class AverageHandler(object):
+    def __init__(self):
+        self.reset()
+        
+    def reset(self):
+        self.total = 0
+        self.count = 0
+        
+    def update(self, value, n=1):
+        self.total += value
+        self.count += n
+        
+    def get_average(self):
+        return self.total / self.count
