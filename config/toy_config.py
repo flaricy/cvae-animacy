@@ -1,13 +1,17 @@
-STATE_DIM=6
+STATE_DIM=12
 ACTION_DIM=10
 LATENT_DIM=64
 
 config=dict(
     dataset=dict(
         path=dict(
-            raw_data_path='data/1V1_data_30/processed',
+            raw_data_path='data/version1_60fps',
         ),
         to_tensor=True,
+        sample=dict(
+            max_length=512,
+            downsample_rate=1,
+        )
     ),
 
     model=dict(
@@ -48,11 +52,40 @@ config=dict(
     ),
     
     train=dict(
-        gt_dataloader=dict(
-            batch_size=1,
-            num_workers=8,
-        ),
         epochs=10000,
+        dynamic_dataset=dict(
+            max_num_trajectories=50000,
+        ),
+        collector=dict(
+            num_trajectories=2048,
+        ),
+        update_world_model=dict(
+            clip_length=8,
+            dataloader=dict(
+                batch_size=512,
+                shuffle=True,
+            ),
+            num_updates=8,
+        ),
+        update_policy_model=dict(
+            clip_length=24,
+            dataloader=dict(
+                batch_size=512,
+                shuffle=True
+            ),
+            num_updates=8,
+        ),
+        state_loss=dict(
+            position_weight=0.5,
+            velocity_weight=0.5,
+            decay_factor_gamma=0.95,
+        ),
+        kl_divergence_loss=dict(
+            factor_beta=0.01,
+            beta_update_step=500,
+            beta_update_multiplier=1.122,
+            decay_factor_gamma=0.95,
+        ),
         optimizer=dict(
             type='Adam',
             lr=1e-4,

@@ -1,23 +1,81 @@
 import torch 
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader 
+import numpy as np
+from ..dataset.doccer import DoccerGTDataset
 from .utils import gt_to_state
-
-def trajectory_collection(dataloader : DataLoader, model, device, num_collection=2048):
-    count = 0
-    model.eval()
-    for gt_data in dataloader:
-        gt_states = gt_to_state(gt_data).to(device) # (B(1), T, 6)
+from .simulator import Simulator
         
-        state_t = gt_states[:, 0] # (B(1), 6)
-        for t in range(0, gt_states.shape[1] - 1):
-            count += 1
-            if count > num_collection:
-                break 
-            
-            latent_t = model.posterior(state_t, gt_states[:, t + 1])
-            action_t = model.policy(state_t, latent_t)
-            state_t_1 = model.world_model(state_t, action_t)
-            
-            
+class TrajectoryCollector:
+    def __init__(self, dataset : DoccerGTDataset, device, simulator : Simulator):
+        self.dataset = dataset 
+        self.dataset_length = len(self.dataset)
+        self.device = device
+        self.simulator = simulator
+        self.simulator.initialize()
         
+    def randomly_retrieve(self) -> dict:
+        random_index = np.random.randint(0, self.dataset_length)
+        return self.dataset[random_index]
+    
+    
+    def np_2_tensor_w_batch_dim(self, array : np.ndarray) -> dict:
+        return torch.from_numpy(array).unsqueeze(0).to(self.device)
+    
+    def tensor_w_batch_dim_2_np(tensor : torch.Tensor) -> np.ndarray:
+        '''
+        tensor : (B, T, D)
+        '''
+        return tensor.squeeze(0).cpu().numpy()
+    
+    def simulate_one_step(self, state_t, action_t):
+        self.simulator.set_state(state_t)
+        corrected_action = self.simulator.action_correction(action_t)
+        result = self.simulator.conduct_action(corrected_action)
+        state_t_1 = self.simulator.get_state()
+        return state_t_1, result
+    
+    def collect_one_trajectory(self, clip_np : dict, model : nn.Module):
+        clip_tensor_w_batch_dim = dict()
+        for key in clip_np.keys():
+            clip_tensor_w_batch_dim[key] = self.np_2_tensor_w_batch_dim(clip_np[key])
+            
+            
+        state_tensor_w_batch_dim = torch.zeros((1, clip_np['state'].shape[0], clip_np['state'].shape[1])).to(self.device)
+        action_tensor_w_batch_dim = torch.zeros((1, clip_np['action'].shape[0], clip_np['action'].shape[1]), dtype=torch.bool).to(self.device)
+            
+            
+        state_tensor_w_batch_dim[:, 0] = clip_tensor_w_batch_dim['state'][:, 0]
+        for t in range(0, clip_tensor_w_batch_dim['state'].shape[1] - 1):
+            latent_t_tensor_w_batch_dim = model.posterior(state_tensor_w_batch_dim[:, t], clip_tensor_w_batch_dim['state'][:, t + 1])
+            action_tensor_w_batch_dim[:, t] = model.policy(state_tensor_w_batch_dim[:, t], latent_t_tensor_w_batch_dim)
+            
+            state_t_np = self.tensor_w_batch_dim_2_np(state_tensor_w_batch_dim[:, t])
+            action_t_np = self.tensor_w_batch_dim_2_np(action_tensor_w_batch_dim[:, t])
+            
+            state_t_1_np, result = self.simulate_one_step(state_t_np, action_t_np)
+            if result is not None:
+                break
+            
+            state_tensor_w_batch_dim[:, t + 1] = self.np_2_tensor_w_batch_dim(state_t_1_np)
+            
+        state_np = self.tensor_w_batch_dim_2_np(state_tensor_w_batch_dim)
+        action_np = self.tensor_w_batch_dim_2_np(action_tensor_w_batch_dim)
+    
+        if t != clip_tensor_w_batch_dim['state'].shape[1] - 1:
+            state_np = state_np[:t+1]
+            action_np = action_np[:t+1]
+            clip_np['state'] = clip_np['state'][:t+1]
+            
+        return dict(
+            state=state_np,
+            action=action_np,
+            gt_state=clip_np['gt_state']
+        )
+    
+    def collect_trajectory(self, model : nn.Module, num_trajectories : int):
+        ret_pieces = []
+        for _ in range(num_trajectories):
+            clip_np = self.randomly_retrieve()
+            ret_pieces.append(self.collect_one_trajectory(clip_np, model))
+            
+        return ret_pieces

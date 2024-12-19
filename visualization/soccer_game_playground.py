@@ -1,13 +1,13 @@
 import sys
-sys.path.append('doccer')
+sys.path.append('.')
 
 import pygame 
 import numpy as np
 import pickle
 from omegaconf import OmegaConf
-from engines.simulator import Simulator 
-from utils.parse_config import load_config
-from data_collect.file_helper import FileHelper 
+from doccer.engines.simulator import Simulator 
+from doccer.utils.parse_config import load_config
+from doccer.data_collect.file_helper import FileHelper 
 
 visualize_config = dict(
     screen_size=(1500, 700),
@@ -27,7 +27,7 @@ visualize_config = dict(
         color=(0, 255, 255),
     ),
     goal_length=200,
-    rendering_fps=60,
+    rendering_fps=30,
 )
 visualize_config = OmegaConf.create(visualize_config)
 similator_config = OmegaConf.create(load_config('config/toy_config.py'))

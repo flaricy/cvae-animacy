@@ -12,7 +12,7 @@ OPTIMIZERS.register_module(module=optim.SGD, name='SGD')
 OPTIMIZERS.register_module(module=optim.AdamW, name='AdamW')
 
 
-def build_optimizer(cfg : omegaconf.dictconfig.DictConfig, model : nn.Module) -> optim.Optimizer:
+def build_optimizer(cfg : omegaconf.dictconfig.DictConfig, params : list) -> optim.Optimizer:
     dict_cfg = OmegaConf.to_container(cfg)
-    dict_cfg['params'] = [p for p in model.parameters() if p.requires_grad]
+    dict_cfg['params'] = params
     return OPTIMIZERS.build(cfg=dict_cfg, use_omegaconf=False)

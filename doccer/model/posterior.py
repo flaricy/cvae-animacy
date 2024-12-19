@@ -17,7 +17,7 @@ class ApproximatePosterior(GaussianDistributor):
             self.layers.append(get_act_module(cfg.act))
             self.layers.append(nn.Linear(cfg.output_dim[i - 1] + cfg.state_dim * 2, cfg.output_dim[i]))
         
-    def get_mean(self, state_t, state_t_1):
+    def get_mean(self, state_t, state_t_1, return_delta=False):
         '''
         state_t: [batch_size, state_dim]
         state_t_1: [batch_size, state_dim]
@@ -28,4 +28,7 @@ class ApproximatePosterior(GaussianDistributor):
             ret = self.layers[i](ret)
             ret = self.layers[i + 1](torch.cat([ret, state_t, state_t_1], dim=1))
             
-        return ret + prior_mean
+        if not return_delta:
+            return ret + prior_mean
+        else:
+            return ret + prior_mean, ret
