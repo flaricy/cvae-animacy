@@ -1,0 +1,1 @@
+python main/train.py -c config/toy_config.py -d mps

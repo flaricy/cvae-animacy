@@ -7,9 +7,9 @@ config=dict(
         path=dict(
             raw_data_path='data/version1_60fps',
         ),
-        to_tensor=True,
+        to_tensor=False,
         sample=dict(
-            max_length=512,
+            max_length=128,
             downsample_rate=1,
         )
     ),
@@ -41,8 +41,10 @@ config=dict(
                 std=0.05,
             ),
             gate_network=dict(
-                dim=[STATE_DIM + LATENT_DIM, 64, 64]
+                dim=[STATE_DIM + LATENT_DIM, 64, 64],
+                act='elu',
             ),
+            
         ),
         world_model=dict(
             type='WorldModel',
@@ -54,10 +56,10 @@ config=dict(
     train=dict(
         epochs=10000,
         dynamic_dataset=dict(
-            max_num_trajectories=50000,
+            max_num_trajectories=5000,
         ),
         collector=dict(
-            num_trajectories=2048,
+            num_trajectories=12,
         ),
         update_world_model=dict(
             clip_length=8,

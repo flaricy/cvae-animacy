@@ -28,7 +28,17 @@ class ApproximatePosterior(GaussianDistributor):
             ret = self.layers[i](ret)
             ret = self.layers[i + 1](torch.cat([ret, state_t, state_t_1], dim=1))
             
+            
         if not return_delta:
             return ret + prior_mean
         else:
             return ret + prior_mean, ret
+        
+    def forward(self, state_t, state_t_1, return_delta=False):
+        if not return_delta:
+            return super(ApproximatePosterior, self).forward(state_t, state_t_1)
+        else:
+            mean, delta = self.get_mean(state_t, state_t_1, return_delta=True)
+            sampled_result = torch.rand_like(mean)
+            ret = sampled_result * self.std + mean 
+            return ret, delta

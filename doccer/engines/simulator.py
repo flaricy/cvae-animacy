@@ -77,7 +77,7 @@ class Simulator:
             self.agents[1]['body'].velocity.x, self.agents[1]['body'].velocity.y,
             self.ball['body'].position.x, self.ball['body'].position.y,
             self.ball['body'].velocity.x, self.ball['body'].velocity.y,
-        ])
+        ], dtype=np.float32)
         
     def _add_agent(self, agent_id:int):
         body = pymunk.Body(mass=self.cfg.agent.mass, moment=float('inf'))

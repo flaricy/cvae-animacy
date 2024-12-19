@@ -62,7 +62,7 @@ class PolicyModel(nn.Module):
     def forward(self, state_t, latent_t):
         experts_ret = torch.stack([expert(state_t, latent_t) for expert in self.experts], dim=1) # [batch_size, num_experts, action_dim]
         experts_weight = self.gate_network(state_t, latent_t) # [batch_size, num_experts]
-        ret = torch.einsum('bne,bne->bn', experts_weight.unsqueeze(2), experts_ret) # [batch_size, action_dim]
+        ret = torch.sum(experts_ret * experts_weight.unsqueeze(2), dim=1) # [batch_size, action_dim]
         return ret
         
         

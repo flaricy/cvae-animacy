@@ -4,6 +4,8 @@ import numpy as np
 from ..dataset.doccer import DoccerGTDataset
 from .utils import gt_to_state
 from .simulator import Simulator
+from tqdm import tqdm 
+import time 
         
 class TrajectoryCollector:
     def __init__(self, dataset : DoccerGTDataset, device, simulator : Simulator):
@@ -46,20 +48,36 @@ class TrajectoryCollector:
             
         state_tensor_w_batch_dim[:, 0] = clip_tensor_w_batch_dim['state'][:, 0]
         for t in range(0, clip_tensor_w_batch_dim['state'].shape[1] - 1):
+            # time0 = time.time()
+            
             latent_t_tensor_w_batch_dim = model.posterior(state_tensor_w_batch_dim[:, t], clip_tensor_w_batch_dim['state'][:, t + 1])
             action_tensor_w_batch_dim[:, t] = model.policy(state_tensor_w_batch_dim[:, t], latent_t_tensor_w_batch_dim)
             
-            state_t_np = self.tensor_w_batch_dim_2_np(state_tensor_w_batch_dim[:, t])
-            action_t_np = self.tensor_w_batch_dim_2_np(action_tensor_w_batch_dim[:, t])
+            # time1 = time.time()
+            
+            state_t_np = TrajectoryCollector.tensor_w_batch_dim_2_np(state_tensor_w_batch_dim[:, t])
+            action_t_np = TrajectoryCollector.tensor_w_batch_dim_2_np(action_tensor_w_batch_dim[:, t])
+            
+            # time2 = time.time()
             
             state_t_1_np, result = self.simulate_one_step(state_t_np, action_t_np)
+            
+            # time3 = time.time()
+            
             if result is not None:
                 break
             
             state_tensor_w_batch_dim[:, t + 1] = self.np_2_tensor_w_batch_dim(state_t_1_np)
             
-        state_np = self.tensor_w_batch_dim_2_np(state_tensor_w_batch_dim)
-        action_np = self.tensor_w_batch_dim_2_np(action_tensor_w_batch_dim)
+            # time4 = time.time()
+            
+            # print(f"model get action time: {time1 - time0:.4f}s")
+            # print(f"tensor to np time: {time2 - time1:.4f}s")
+            # print(f"simulate one step time: {time3 - time2:.4f}s")
+            # print(f"tensor to np time: {time4 - time3:.4f}s")
+            
+        state_np = TrajectoryCollector.tensor_w_batch_dim_2_np(state_tensor_w_batch_dim)
+        action_np = TrajectoryCollector.tensor_w_batch_dim_2_np(action_tensor_w_batch_dim)
     
         if t != clip_tensor_w_batch_dim['state'].shape[1] - 1:
             state_np = state_np[:t+1]
@@ -69,12 +87,12 @@ class TrajectoryCollector:
         return dict(
             state=state_np,
             action=action_np,
-            gt_state=clip_np['gt_state']
+            gt_state=clip_np['state']
         )
     
     def collect_trajectory(self, model : nn.Module, num_trajectories : int):
         ret_pieces = []
-        for _ in range(num_trajectories):
+        for _ in tqdm(range(num_trajectories), desc='Collecting trajectories'):
             clip_np = self.randomly_retrieve()
             ret_pieces.append(self.collect_one_trajectory(clip_np, model))
             

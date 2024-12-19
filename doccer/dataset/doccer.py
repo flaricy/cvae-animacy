@@ -1,3 +1,4 @@
+import numpy as np 
 from torch.utils.data import Dataset
 import omegaconf
 from pathlib import Path 
@@ -14,6 +15,7 @@ class DoccerGTDataset(Dataset):
                 continue 
             with open(file, "rb") as f:
                 data = pickle.load(f)
+            data['state'] = data['state'].astype(np.float32)
             cur_length = data['state'].shape[0]
             self.datas.append(data)
             
@@ -67,6 +69,9 @@ class DoccerDynamicDataset(Dataset):
                 continue 
             for l in range(0, piece['state'].shape[0] - clip_length + 1):
                 self.clips.append((piece_index, l))
+                
+    def __len__(self):
+        return len(self.clips)
                 
     def __getitem__(self, index):
         piece_index, clip_start = self.clips[index]

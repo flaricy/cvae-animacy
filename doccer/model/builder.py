@@ -1,5 +1,5 @@
 import omegaconf 
-from utils.registry import Registry 
+from ..utils.registry import Registry 
 
 MODELS = Registry('models')
 
