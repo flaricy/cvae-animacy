@@ -11,6 +11,7 @@ from ..utils.dataloader import build_dataloader
 from ..utils.optimizer import build_optimizer 
 from ..utils.scheduler import build_scheduler
 from ..utils.misc import AverageHandler
+from ..utils.file import FileHelper
 from .process import TrajectoryCollector
 from .simulator import Simulator
 from tqdm import tqdm 
@@ -18,6 +19,7 @@ from tqdm import tqdm
 class Trainer(object):
     def __init__(self, cfg : omegaconf.dictconfig.DictConfig):
         self.cfg = cfg
+        self._prepare_logging()
         self._prepare_data()
         self._prepare_model()
         
@@ -28,6 +30,7 @@ class Trainer(object):
             vae_state=AverageHandler(),
             kl_divergence=AverageHandler(),
         )
+        self.writer = SummaryWriter(log_dir=self.file_helper.get_log_path())
         for epoch in range(self.cfg.train.epochs):
             if epoch % self.cfg.train.collector.collect_every_n_epochs == 0:
                 logging.info(f"epoch {epoch} | Collecting simulated trajectories & updating dynamic dataset")
@@ -103,6 +106,7 @@ class Trainer(object):
             log_message = f"epoch {epoch} | " 
             for key in self.loss_handlers:
                 log_message += f"{key} loss: {self.loss_handlers[key].get_average():.4f}\t"
+                self.writer.add_scalar(f"{key}_loss", self.loss_handlers[key].get_average(), epoch)
             logging.info(log_message)
                 
             self.world_model_scheduler.step()
@@ -110,6 +114,15 @@ class Trainer(object):
                 
             if epoch % self.cfg.train.kl_divergence_loss.beta_update_step == 0:
                 kl_loss_factor *= self.cfg.train.kl_divergence_loss.beta_update_multiplier
+                
+            if epoch % self.cfg.train.save_every_n_epochs == 0:
+                save_dict = dict(
+                    epoch=epoch,
+                    model=self.model.state_dict(),
+                    world_model_optimizer=self.world_model_optimizer.state_dict(),
+                    vae_model_optimizer=self.vae_model_optimizer.state_dict(),
+                )
+                torch.save(save_dict, self.file_helper.get_ckpts_path() + f'/epoch_{epoch}.pth')
             
             
     
@@ -136,5 +149,13 @@ class Trainer(object):
         self.state_loss = StateLoss(self.cfg.train.state_loss)
         self.kl_diver_loss = KLDivergLoss(self.cfg.train.kl_divergence_loss)
         
-        
-        
+    def _prepare_logging(self):
+        self.file_helper = FileHelper(self.cfg.train.log_dir, comment=self.cfg.train.comment if 'comment' in self.cfg.train else None)
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.StreamHandler(),
+                logging.FileHandler(self.file_helper.get_log_path() + '/app.log', mode='w')
+            ]
+        )

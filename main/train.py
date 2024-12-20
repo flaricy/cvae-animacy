@@ -14,6 +14,8 @@ def parse_args():
     
     parser.add_argument('--config', '-c', type=str, required=True)
     parser.add_argument('--device', '-d', type=str, required=False)
+    parser.add_argument('--log_path', '-p', type=str, required=False)
+    parser.add_argument('--comment', type=str, required=False)
     
     args = parser.parse_args()
     return args 
@@ -23,12 +25,7 @@ def set_default_dtype():
     
 def set_debug_mode():
     torch.autograd.set_detect_anomaly(True)
-    
-def set_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
+
 
 if __name__ == "__main__":
     args = parse_args()
@@ -37,9 +34,14 @@ if __name__ == "__main__":
     if args.device is not None:
         config.device = args.device 
         
+    if args.log_path is not None:
+        config.train.log_dir = args.log_path
+        
+    if args.comment is not None:
+        config.train.comment = args.comment
+        
     set_default_dtype()
     # set_debug_mode()
-    set_logging()
         
     trainer = Trainer(config)
     trainer.train()

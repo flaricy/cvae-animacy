@@ -56,6 +56,7 @@ config=dict(
     
     train=dict(
         epochs=10000,
+        save_every_n_epochs=250,
         dynamic_dataset=dict(
             max_num_trajectories=640,
         ),
@@ -100,6 +101,7 @@ config=dict(
             step_size=5000,
             gamma=0.1,
         ),
+        log_dir='experiment/initial_test',
     ),
     
     device='mps',
