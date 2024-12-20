@@ -5,7 +5,7 @@ LATENT_DIM=64
 config=dict(
     dataset=dict(
         path=dict(
-            raw_data_path='data/version1_60fps',
+            raw_data_path='data/version3_20fps',
         ),
         to_tensor=False,
         sample=dict(
