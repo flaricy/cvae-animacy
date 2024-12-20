@@ -27,10 +27,10 @@ visualize_config = dict(
         color=(0, 255, 255),
     ),
     goal_length=200,
-    rendering_fps=60,
+    rendering_fps=20,
 )
 visualize_config = OmegaConf.create(visualize_config)
-similator_config = OmegaConf.create(load_config('config/toy_config.py'))
+similator_config = OmegaConf.create(load_config('config/20_fps.py'))
 similator_config = similator_config.simulator
 
 def get_initial_state():
@@ -115,7 +115,9 @@ def main():
         keys = pygame.key.get_pressed()
         action = get_action(keys)
         if not started and np.any(action):
-                started = True
+            started = True
+        if started:
+            data_log['action'][counter] = action 
         action = simulator.action_correction(action)
         
         result = simulator.conduct_action(action)
@@ -125,7 +127,6 @@ def main():
         state = simulator.get_state()
         if started:
             data_log['state'][counter] = state 
-            data_log['action'][counter] = action 
             counter += 1
         screen.fill(visualize_config.court_color)
         fps = clock.get_fps()
@@ -140,7 +141,7 @@ def main():
     for key in data_log.keys():
         data_log[key] = data_log[key][:counter]
     
-    file_helper = FileHelper(data_dir='data')
+    file_helper = FileHelper(data_dir='data/version3_20fps')
     with open(file_helper.get_cur_file_path(), 'wb') as f:
         pickle.dump(data_log, f)
         

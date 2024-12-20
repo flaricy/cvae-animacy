@@ -1,5 +1,5 @@
 python main/train.py \
-    -c config/toy_config.py \
+    -c config/20_fps/lr_1e-5.py \
     -d mps \
-    -p experiment/test_runnable \
-    --comment "test_runnable"
+    -p experiment/modify_fps \
+    --comment "lr_1e-5"

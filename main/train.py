@@ -30,6 +30,7 @@ def set_debug_mode():
 if __name__ == "__main__":
     args = parse_args()
     config = OmegaConf.create(load_config(args.config))
+    config.config_path = args.config
     
     if args.device is not None:
         config.device = args.device 

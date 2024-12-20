@@ -16,7 +16,8 @@ class FileHelper(object):
     def _set_up(self):
         self.sub_dir = dict(
             log=self.path / 'log',
-            ckpts=self.path / 'ckpts'
+            ckpts=self.path / 'ckpts',
+            config=self.path / 'config',
         )
         for key in self.sub_dir:
             self.sub_dir[key].mkdir(parents=True, exist_ok=True)
@@ -26,4 +27,7 @@ class FileHelper(object):
     
     def get_ckpts_path(self):
         return str(self.sub_dir['ckpts'])
+    
+    def get_config_path(self):
+        return str(self.sub_dir['config'])
         

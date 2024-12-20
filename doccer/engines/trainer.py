@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn 
 from torch.utils.tensorboard import SummaryWriter
 import omegaconf
-import logging, copy
+import logging, copy, shutil
 from ..model import build_model
 from ..model.loss.state import StateLoss
 from ..model.loss.kl_diverg import KLDivergLoss
@@ -151,6 +151,7 @@ class Trainer(object):
         
     def _prepare_logging(self):
         self.file_helper = FileHelper(self.cfg.train.log_dir, comment=self.cfg.train.comment if 'comment' in self.cfg.train else None)
+        shutil.copy(self.cfg.config_path, self.file_helper.get_config_path())
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
