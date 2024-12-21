@@ -1,6 +1,7 @@
 import torch 
 import torch.nn as nn 
 from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import DataLoader
 import omegaconf
 import logging, copy, shutil
 from ..model import build_model
@@ -10,9 +11,10 @@ from ..dataset.doccer import DoccerGTDataset, DoccerDynamicDataset
 from ..utils.dataloader import build_dataloader
 from ..utils.optimizer import build_optimizer 
 from ..utils.scheduler import build_scheduler
-from ..utils.misc import AverageHandler
+from ..utils.misc import AverageHandler, generate_html_with_videos
 from ..utils.file import FileHelper
 from .process import TrajectoryCollector
+from ..visualizer.state_visualizer import StateVisualizer
 from .simulator import Simulator
 from tqdm import tqdm 
 
@@ -22,6 +24,7 @@ class Trainer(object):
         self._prepare_logging()
         self._prepare_data()
         self._prepare_model()
+        self._prepare_visualization()
         
     def train(self):
         kl_loss_factor=self.cfg.train.kl_divergence_loss.factor_beta
@@ -123,6 +126,33 @@ class Trainer(object):
                     vae_model_optimizer=self.vae_model_optimizer.state_dict(),
                 )
                 torch.save(save_dict, self.file_helper.get_ckpts_path() + f'/epoch_{epoch}.pth')
+                
+                self._save_validation_result(epoch)
+                
+                
+                
+    def _save_validation_result(self, epoch):
+        save_dir = self.file_helper.make_sub_vis_dir(epoch)
+        temp_dataloader = DataLoader(self.dynamic_dataset_for_policy_model, batch_size=1, shuffle=True)
+        self.model.eval()
+        with torch.no_grad():
+            for batch_count, data in enumerate(tqdm(temp_dataloader, desc='saving visualization result', total=20)):
+                state = torch.zeros_like(data['gt_state'], device=self.cfg.device)
+                state[:, 0] = data['gt_state'][:, 0].to(self.cfg.device)
+                for t in range(state.shape[1] - 1):
+                    latent_t = self.model.posterior.conditional_prior(state[:, t])
+                    action_t = self.model.policy(state[:, t], latent_t)
+                    state[:, t + 1] = self.model.world_model(state[:, t], action_t)
+                    
+                gt_state = data['gt_state'].squeeze(0).numpy()
+                generated_state = state.squeeze(0).cpu().numpy()
+                ani = self.visualizer.visualize(generated_state, gt_state)
+                ani.save(save_dir + f'/{batch_count}.mp4', writer='ffmpeg', fps=self.cfg.simulator.action_fps)
+                
+                if batch_count == 20:
+                    break
+            
+        generate_html_with_videos(save_dir, self.file_helper.get_vis_path() + f"/epoch_{epoch}.html")
             
             
     
@@ -139,11 +169,18 @@ class Trainer(object):
         self.model.to(self.cfg.device)
         logging.info(f"model built, total parameters: {sum(p.numel() for p in self.model.parameters() if p.requires_grad)}")
         
-        self.world_model_optimizer = build_optimizer(self.cfg.train.optimizer, [p for p in self.model.world_model.parameters() if p.requires_grad])
-        self.vae_model_optimizer = build_optimizer(
-            self.cfg.train.optimizer, 
-            [p for p_name, p in self.model.named_parameters() if p.requires_grad and 'world_model' not in p_name]
-        )
+        if 'optimizer' in self.cfg.train:
+            self.world_model_optimizer = build_optimizer(self.cfg.train.optimizer, [p for p in self.model.world_model.parameters() if p.requires_grad])
+            self.vae_model_optimizer = build_optimizer(
+                self.cfg.train.optimizer, 
+                [p for p_name, p in self.model.named_parameters() if p.requires_grad and 'world_model' not in p_name]
+            )
+        else:
+            self.world_model_optimizer = build_optimizer(self.cfg.train.world_model_optimizer, [p for p in self.model.world_model.parameters() if p.requires_grad])
+            self.vae_model_optimizer = build_optimizer(
+                self.cfg.train.vae_optimizer, 
+                [p for p_name, p in self.model.named_parameters() if p.requires_grad and 'world_model' not in p_name]
+            )
         self.world_model_scheduler = build_scheduler(self.cfg.train.scheduler, self.world_model_optimizer)
         self.vae_model_scheduler = build_scheduler(self.cfg.train.scheduler, self.vae_model_optimizer)
         self.state_loss = StateLoss(self.cfg.train.state_loss)
@@ -160,3 +197,6 @@ class Trainer(object):
                 logging.FileHandler(self.file_helper.get_log_path() + '/app.log', mode='w')
             ]
         )
+        
+    def _prepare_visualization(self):
+        self.visualizer = StateVisualizer(self.cfg.simulator, self.cfg.dataset.sample.scaling)

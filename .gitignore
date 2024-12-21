@@ -4,6 +4,7 @@
 /tools/
 /archives/
 /experiment/
+/train_config/
 .DS_Store
 
 # Byte-compiled / optimized / DLL files

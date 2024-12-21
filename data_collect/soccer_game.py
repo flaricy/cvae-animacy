@@ -30,7 +30,7 @@ visualize_config = dict(
     rendering_fps=20,
 )
 visualize_config = OmegaConf.create(visualize_config)
-similator_config = OmegaConf.create(load_config('config/20_fps.py'))
+similator_config = OmegaConf.create(load_config('config/20_fps/lr_1e-5.py'))
 similator_config = similator_config.simulator
 
 def get_initial_state():

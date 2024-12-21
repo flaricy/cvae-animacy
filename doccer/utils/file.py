@@ -18,6 +18,7 @@ class FileHelper(object):
             log=self.path / 'log',
             ckpts=self.path / 'ckpts',
             config=self.path / 'config',
+            vis=self.path / 'vis',
         )
         for key in self.sub_dir:
             self.sub_dir[key].mkdir(parents=True, exist_ok=True)
@@ -30,4 +31,12 @@ class FileHelper(object):
     
     def get_config_path(self):
         return str(self.sub_dir['config'])
+    
+    def get_vis_path(self):
+        return str(self.sub_dir['vis'])
+    
+    def make_sub_vis_dir(self, epoch:int):
+        tmp_path = self.sub_dir['vis'] / f"epoch_{epoch}"
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        return str(tmp_path)
         
