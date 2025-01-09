@@ -1,9 +1,10 @@
 /data/
-/toys/
+/sandbox/
 /tools/
 /archives/
 /experiment/
 /config/
+
 .idea/
 .DS_Store
 

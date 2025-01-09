@@ -17,7 +17,6 @@ class LSTMModel(nn.Module):
 
         self.h0 = nn.Parameter(torch.zeros(1, cfg.proj_size))
         self.c0 = nn.Parameter(torch.zeros(1, cfg.hidden_size))
-        self.reset()
 
     def forward(self, state):
         '''
@@ -30,8 +29,8 @@ class LSTMModel(nn.Module):
         return output
 
     def reset(self):
-        self.cur_h = self.h0 # (1, action_D)
-        self.cur_c = self.c0
+        self.cur_h = self.h0.detach().clone() # (1, action_D)
+        self.cur_c = self.c0.detach().clone()
 
     def gen_forward(self, new_state):
         '''
