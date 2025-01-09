@@ -1,10 +1,9 @@
 /data/
 /toys/
-/validate/
 /tools/
 /archives/
 /experiment/
-/train_config/
+/config/
 .DS_Store
 
 # Byte-compiled / optimized / DLL files

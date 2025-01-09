@@ -85,7 +85,7 @@ $$
 
 ### training algorithm 
 
-<img src="static/trainAlg.png" width="600" />
+<img src="doc/trainAlg.png" width="600" />
 
 #### 注意：没有提到的
 1. reparameterization trick 
