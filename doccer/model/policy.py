@@ -12,7 +12,7 @@ class ExpertModel(GaussianDistributor):
         self.layers.append(nn.Linear(cfg.state_dim + cfg.latent_dim, cfg.output_dim[0]))
         for i in range(1, len(cfg.output_dim)):
             self.layers.append(get_act_module(cfg.act))
-            self.layers.append(nn.LayerNorm( normalized_shape=(cfg.output_dim[i - 1] + cfg.latent_dim,) ))
+            self.layers.append(nn.LayerNorm(normalized_shape=(cfg.output_dim[i - 1] + cfg.latent_dim,)))
             self.layers.append(nn.Linear(cfg.output_dim[i - 1] + cfg.latent_dim, cfg.output_dim[i]))
             
     def get_mean(self, state_t, latent_t):
