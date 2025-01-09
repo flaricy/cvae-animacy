@@ -1,4 +1,6 @@
 import shutil
+from sched import scheduler
+
 import torch
 import omegaconf
 from ..model.builder import build_model
@@ -96,6 +98,18 @@ class WorldModelTrainer(Trainer):
 
             self.scheduler.step()
 
+            if epoch % self.cfg.world_model_trainer.save_ckpts_per_epochs == 0:
+                checkpoint = dict(
+                    epoch=epoch,
+                    model_state_dict=self.model.state_dict(),
+                    optimizer_state_dict=self.optimizer.state_dict(),
+                    scheduler_state_dict=self.scheduler.state_dict(),
+                )
+                torch.save(
+                    checkpoint,
+                    self.file_helper.get_ckpts_path() + f'/epoch_{epoch}.pth'
+                )
+
 class GenerationModelTrainer(Trainer):
     def __init__(self, cfg:omegaconf.dictconfig.DictConfig):
         super(GenerationModelTrainer, self).__init__(cfg)
@@ -128,6 +142,18 @@ class GenerationModelTrainer(Trainer):
             self.scheduler.step()
             self.writer.add_scalar('loss', self.loss_logger.get_average(), epoch)
             logging.info(f"Epoch: {epoch} Loss: {self.loss_logger.get_average():.4f}")
+
+            if epoch % self.cfg.gen_model_trainer.save_ckpts_per_epochs == 0:
+                checkpoint = dict(
+                    epoch=epoch,
+                    model_state_dict=self.model.state_dict(),
+                    optimizer_state_dict=self.optimizer.state_dict(),
+                    scheduler_state_dict=self.scheduler.state_dict(),
+                )
+                torch.save(
+                    checkpoint,
+                    self.file_helper.get_ckpts_path() + f'/epoch_{epoch}.pth'
+                )
 
 
     def _prepare_data(self):

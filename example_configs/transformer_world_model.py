@@ -13,26 +13,27 @@ config = dict(
     ),
 
     gen_model_trainer=dict(
-        epochs=100,
+        epochs=200,
+        save_ckpts_per_epochs=100,
         dataset=dict(
             path=dict(
                 raw_data_path='data/version3_20fps',
             ),
             to_tensor=True,
             sample=dict(
-                max_length=40,
+                max_length=80,
                 downsample_rate=1,
                 scaling=0.001,
             ),
         ),
         dataloader=dict(
-            batch_size=128,
+            batch_size=512,
             shuffle=True,
         ),
         optimizer=dict(
             type='AdamW',
-            lr=1e-5,
-            weight_decay=1e-4,
+            lr=1e-3,
+            weight_decay=5e-4,
         ),
         scheduler=dict(
             type='StepLR',
