@@ -1,10 +1,10 @@
 from sched import scheduler
 
-STATE_DIM=12
-ACTION_DIM=10
-LATENT_DIM=64
+STATE_DIM = 12
+ACTION_DIM = 10
+LATENT_DIM = 64
 
-config=dict(
+config = dict(
     gen_model=dict(
         type='ControlVAE',
         conditional_prior=dict(
@@ -39,13 +39,17 @@ config=dict(
     ),
 
     world_model=dict(
-        type='WorldModel',
-        dim=[STATE_DIM + ACTION_DIM, 512, 512, 512, 512, STATE_DIM],
+        type='TransformerWorldModel',
+        hidden_dim=128,
+        dim_feedforward=512,
+        nhead=4,
+        dropout=0.1,
+        num_layers=4,
         act='elu',
     ),
 
     world_model_trainer=dict(
-        epochs=100,
+        epochs=1000,
         dataset=dict(
             path=dict(
                 raw_data_path='data/version3_20fps',
@@ -76,12 +80,12 @@ config=dict(
             velocity_weight=0.5,
         ),
     ),
-    
+
     device='mps',
-    
+
     simulator=dict(
-        screen_size = (1500, 700),
-        space_damping = 0.2,
+        screen_size=(1500, 700),
+        space_damping=0.2,
         agent=dict(
             mass=2,
             radius=30,

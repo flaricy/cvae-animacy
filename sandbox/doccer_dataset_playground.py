@@ -4,7 +4,7 @@ from doccer.dataset.doccer import DoccerGTDataset
 from doccer.utils.parse_config import load_config 
 from omegaconf import OmegaConf
 
-cfg = OmegaConf.create(load_config("example_configs/default.py"))
+cfg = OmegaConf.create(load_config("example_configs/mlp_world_model.py"))
 dataset = DoccerGTDataset(cfg.world_model_trainer.dataset)
 
 data = dataset[0]
