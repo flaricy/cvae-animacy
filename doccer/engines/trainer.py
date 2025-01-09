@@ -105,10 +105,10 @@ class GenerationModelTrainer(Trainer):
 
     def train(self):
         logging.info("Start training")
-        for epoch in range(1, self.cfg.gen_model_trainer.epochs + 1):
+        for epoch in tqdm(range(1, self.cfg.gen_model_trainer.epochs + 1)):
             self.model.train()
             self.loss_logger = AverageHandler()
-            for batch_index, data in tqdm(enumerate(self.dataloader), desc=f"Epoch {epoch}"):
+            for batch_index, data in enumerate(self.dataloader):
                 state = data['state'].to(self.cfg.device) # (B, T, state_D)
                 gt_action = data['action'].to(self.cfg.device).float() # (B, T, action_D)
                 model_output_action = self.model(state) # (B, T, action_D)

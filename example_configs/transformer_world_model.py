@@ -10,7 +10,6 @@ config = dict(
         input_size=STATE_DIM,
         hidden_size=512,
         proj_size=ACTION_DIM,
-        dropout=0.1,
     ),
 
     gen_model_trainer=dict(

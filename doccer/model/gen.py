@@ -12,7 +12,6 @@ class LSTMModel(nn.Module):
             input_size=cfg.input_size,
             hidden_size=cfg.hidden_size,
             batch_first=True,
-            dropout=0.1,
             proj_size=cfg.proj_size
         )
 
