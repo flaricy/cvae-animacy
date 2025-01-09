@@ -5,7 +5,7 @@ import numpy as np
 import torch 
 import argparse
 import logging
-from doccer.engines.trainer import Trainer 
+from doccer.engines.trainer import WorldModelTrainer
 from doccer.utils.parse_config import load_config 
 from omegaconf import OmegaConf
 
@@ -36,13 +36,13 @@ if __name__ == "__main__":
         config.device = args.device 
         
     if args.log_path is not None:
-        config.train.log_dir = args.log_path
+        config.world_model_trainer.log_dir = args.log_path
         
     if args.comment is not None:
-        config.train.comment = args.comment
+        config.world_model_trainer.comment = args.comment
         
     set_default_dtype()
     # set_debug_mode()
         
-    trainer = Trainer(config)
+    trainer = WorldModelTrainer(config)
     trainer.train()

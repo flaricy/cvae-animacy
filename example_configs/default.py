@@ -1,21 +1,11 @@
+from sched import scheduler
+
 STATE_DIM=12
 ACTION_DIM=10
 LATENT_DIM=64
 
 config=dict(
-    dataset=dict(
-        path=dict(
-            raw_data_path='data/version1_60fps',
-        ),
-        to_tensor=False,
-        sample=dict(
-            max_length=128,
-            downsample_rate=1,
-            scaling=0.001,
-        ),
-    ),
-
-    model=dict(
+    gen_model=dict(
         type='ControlVAE',
         conditional_prior=dict(
             type='ConditionalPrior',
@@ -45,63 +35,46 @@ config=dict(
                 dim=[STATE_DIM + LATENT_DIM, 64, 64],
                 act='elu',
             ),
-            
-        ),
-        world_model=dict(
-            type='WorldModel',
-            dim=[STATE_DIM + ACTION_DIM, 512, 512, 512, 512, STATE_DIM],
-            act='elu',
         ),
     ),
-    
-    train=dict(
-        epochs=10000,
-        save_every_n_epochs=250,
-        dynamic_dataset=dict(
-            max_num_trajectories=640,
-        ),
-        collector=dict(
-            num_trajectories=64,
-            collect_every_n_epochs=10,
-        ),
-        update_world_model=dict(
-            clip_length=8,
-            dataloader=dict(
-                batch_size=512,
-                shuffle=True,
+
+    world_model=dict(
+        type='WorldModel',
+        dim=[STATE_DIM + ACTION_DIM, 512, 512, 512, 512, STATE_DIM],
+        act='elu',
+    ),
+
+    world_model_trainer=dict(
+        epochs=100,
+        dataset=dict(
+            path=dict(
+                raw_data_path='data/version3_20fps',
             ),
-            num_updates=8,
-        ),
-        update_policy_model=dict(
-            clip_length=24,
-            dataloader=dict(
-                batch_size=512,
-                shuffle=True,
+            to_tensor=True,
+            sample=dict(
+                max_length=2,
+                downsample_rate=1,
+                scaling=0.001,
             ),
-            num_updates=8,
         ),
-        state_loss=dict(
-            position_weight=0.5,
-            velocity_weight=0.5,
-            decay_factor_gamma=0.95,
-        ),
-        kl_divergence_loss=dict(
-            factor_beta=0.01,
-            beta_update_step=500,
-            beta_update_multiplier=1.122,
-            decay_factor_gamma=0.95,
+        dataloader=dict(
+            batch_size=256,
+            shuffle=True,
         ),
         optimizer=dict(
-            type='Adam',
-            lr=1e-4,
-            weight_decay=1e-5,
+            type='AdamW',
+            lr=1e-5,
+            weight_decay=1e-4,
         ),
         scheduler=dict(
             type='StepLR',
-            step_size=5000,
+            step_size=100000,
             gamma=0.1,
         ),
-        log_dir='experiment/initial_test',
+        loss=dict(
+            position_weight=0.5,
+            velocity_weight=0.5,
+        ),
     ),
     
     device='mps',

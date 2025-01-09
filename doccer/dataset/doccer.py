@@ -44,40 +44,40 @@ class DoccerGTDataset(Dataset):
         return ret_dict
 
 
-class DoccerDynamicDataset(Dataset):
-    def __init__(self, cfg : omegaconf.dictconfig.DictConfig):
-        self.cfg = cfg 
-        self.pieces = []
-        '''
-        piece:
-            state: [T, D]
-            action: [T, A]
-            gt_state: [T, D]
-        '''
-        
-    def merge_pieces(self, new_piece : list):
-        if len(self.pieces) + len(new_piece) > self.cfg.max_num_trajectories:
-            num_removals = len(self.pieces) + len(new_piece) - self.cfg.max_num_trajectories
-            self.pieces = self.pieces[num_removals:]
-        self.pieces.extend(new_piece)
-        
-    def update_clips(self, clip_length : int):
-        self.clip_length = clip_length
-        self.clips = []
-        for piece_index, piece in enumerate(self.pieces):
-            if piece['state'].shape[0] < clip_length:
-                continue 
-            for l in range(0, piece['state'].shape[0] - clip_length + 1):
-                self.clips.append((piece_index, l))
-                
-    def __len__(self):
-        return len(self.clips)
-                
-    def __getitem__(self, index):
-        piece_index, clip_start = self.clips[index]
-        clip_end = clip_start + self.clip_length - 1
-        return dict(
-            state=self.pieces[piece_index]['state'][clip_start : clip_end + 1],
-            action=self.pieces[piece_index]['action'][clip_start : clip_end + 1],
-            gt_state=self.pieces[piece_index]['gt_state'][clip_start : clip_end + 1]
-        )
+# class DoccerDynamicDataset(Dataset):
+#     def __init__(self, cfg : omegaconf.dictconfig.DictConfig):
+#         self.cfg = cfg
+#         self.pieces = []
+#         '''
+#         piece:
+#             state: [T, D]
+#             action: [T, A]
+#             gt_state: [T, D]
+#         '''
+#
+#     def merge_pieces(self, new_piece : list):
+#         if len(self.pieces) + len(new_piece) > self.cfg.max_num_trajectories:
+#             num_removals = len(self.pieces) + len(new_piece) - self.cfg.max_num_trajectories
+#             self.pieces = self.pieces[num_removals:]
+#         self.pieces.extend(new_piece)
+#
+#     def update_clips(self, clip_length : int):
+#         self.clip_length = clip_length
+#         self.clips = []
+#         for piece_index, piece in enumerate(self.pieces):
+#             if piece['state'].shape[0] < clip_length:
+#                 continue
+#             for l in range(0, piece['state'].shape[0] - clip_length + 1):
+#                 self.clips.append((piece_index, l))
+#
+#     def __len__(self):
+#         return len(self.clips)
+#
+#     def __getitem__(self, index):
+#         piece_index, clip_start = self.clips[index]
+#         clip_end = clip_start + self.clip_length - 1
+#         return dict(
+#             state=self.pieces[piece_index]['state'][clip_start : clip_end + 1],
+#             action=self.pieces[piece_index]['action'][clip_start : clip_end + 1],
+#             gt_state=self.pieces[piece_index]['gt_state'][clip_start : clip_end + 1]
+#         )

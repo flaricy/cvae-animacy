@@ -4,6 +4,7 @@
 /archives/
 /experiment/
 /config/
+.idea/
 .DS_Store
 
 # Byte-compiled / optimized / DLL files

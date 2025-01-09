@@ -9,7 +9,6 @@ class ControlVAE(nn.Module):
         super(ControlVAE, self).__init__()
         self.posterior = build_model(cfg.posterior)
         self.policy = build_model(cfg.policy)
-        self.world_model = build_model(cfg.world_model)
         
         
     
