@@ -105,16 +105,13 @@ class GenerationModelTrainer(Trainer):
 
     def train(self):
         logging.info("Start training")
-        for epoch in tqdm(range(1, self.cfg.gen_model_trainer.epochs + 1)):
+        for epoch in range(1, self.cfg.gen_model_trainer.epochs + 1):
             self.model.train()
             self.loss_logger = AverageHandler()
-            for batch_index, data in enumerate(self.dataloader):
-                state_0 = data['state'][:, 0].to(self.cfg.device)
-                state_1 = data['state'][:, 1].to(self.cfg.device)
-                gt_action = data['action'][:, 0].to(self.cfg.device).float()
-
-                latent = self.model.posterior(state_0, state_1)
-                model_output_action = self.model.policy(state_0, latent) # (B, action_D)
+            for batch_index, data in tqdm(enumerate(self.dataloader), desc=f"Epoch {epoch}"):
+                state = data['state'].to(self.cfg.device) # (B, T, state_D)
+                gt_action = data['action'].to(self.cfg.device).float() # (B, T, action_D)
+                model_output_action = self.model(state) # (B, T, action_D)
 
                 loss = torch.nn.functional.binary_cross_entropy_with_logits(
                     input=model_output_action,

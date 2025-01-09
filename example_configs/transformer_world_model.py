@@ -6,36 +6,11 @@ LATENT_DIM = 64
 
 config = dict(
     gen_model=dict(
-        type='ControlVAE',
-        conditional_prior=dict(
-            type='ConditionalPrior',
-            state_dim=STATE_DIM,
-            output_dim=[512, 512, LATENT_DIM],
-            act='elu',
-            std=0.3,
-        ),
-        posterior=dict(
-            type='ApproximatePosterior',
-            state_dim=STATE_DIM,
-            output_dim=[512, 512, LATENT_DIM],
-            act='elu',
-            std=0.3,
-        ),
-        policy=dict(
-            type='PolicyModel',
-            num_experts=6,
-            expert_network=dict(
-                output_dim=[512, 512, 512, ACTION_DIM],
-                state_dim=STATE_DIM,
-                latent_dim=LATENT_DIM,
-                act='elu',
-                std=0.05,
-            ),
-            gate_network=dict(
-                dim=[STATE_DIM + LATENT_DIM, 64, 64],
-                act='elu',
-            ),
-        ),
+        type='LSTMModel',
+        input_size=STATE_DIM,
+        hidden_size=512,
+        proj_size=ACTION_DIM,
+        dropout=0.1,
     ),
 
     gen_model_trainer=dict(
@@ -46,7 +21,7 @@ config = dict(
             ),
             to_tensor=True,
             sample=dict(
-                max_length=2,
+                max_length=40,
                 downsample_rate=1,
                 scaling=0.001,
             ),
